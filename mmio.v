@@ -19,6 +19,7 @@ wire vram_chrspace = (addr[31:20] == 12'd1);
 wire baselinectl_space = (addr[31:20] == 12'd2);
 wire vram_guispace = (addr[31:20] == 12'd3);
 wire graphicctl_space = (addr[31:20] == 12'd4);
+wire rtc_space = (addr[31:20] == 12'd5);
 wire kbd_space = (addr[31:20] == 12'hbad);
 assign kbd_read = kbd_space & read;
 reg [4:0] tty_scan_baseline;
@@ -32,8 +33,10 @@ wire [7:0] vram_gui_rdout, vram_gui_gdout, vram_gui_bdout;
 wire [7:0] vram_gui_rdata, vram_gui_gdata, vram_gui_bdata;
 wire [7:0] vram_ascii;
 wire [127:0] shape;
+reg [31:0] mtime;
 reg gui_or_tty;
 always @(posedge clk) begin
+    mtime <= mtime + 32'b1;
     if (graphicctl_space & we) begin
         gui_or_tty <= din[0];
     end
@@ -125,10 +128,12 @@ assign vga_data = gui_or_tty ? {vga_rdata, vga_gdata, vga_bdata} :
 assign dout = ram_space ? ram_data : 
               kbd_space ? {24'b0, kbd_ready ? kbd_data : 8'b0} :
               vram_chrspace ? vram_chrdout :
+              rtc_space ? mtime :
               vram_guidout;
 
 initial begin
     tty_scan_baseline = 5'b0;
     gui_or_tty = 1'b0;
+    mtime = 32'b0;
 end
 endmodule
